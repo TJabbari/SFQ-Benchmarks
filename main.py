@@ -4,7 +4,8 @@ Author: Tahereh Jabbari
 Date created: 12/1/2023
 
 Description:
-This script demonstrates ...
+The lack of SFQ specific benchmark systems complicates the development and evaluation of these SFQ design flows. This limitation is particularly relevant to the development of physical design tools since existing CMOS benchmark systems are not easily adapted to support SFQ technology. Due to the gate-level pipelining inherent to SFQ logic, path balancing using D flip flops is required to ensure consistent logic depth and correct operation.
+Here we present an algorithm to convert CMOS benchmark circuits into SFQ technology, producing SFQ circuits with over 100,000 logic gates.
 
 """
 
@@ -19,12 +20,12 @@ import copy
 DFF_Width = 60
 Cell_Width = 80
 Cell_height = 40
-Min_Space = 20   # Min Space requirement between the cells
+Min_Space = 20   # Min Space requirement between cells
 M_X_b = 0.0 # margin of X
 M_X_e = 75.84 # margin of X
 M_Y_b = 0.0
 M_Y_e = 74.56
-Max_of_X = 212.96 # Maxium of Xs in Cmos data + 2.88 ( Width of cells in cmos benchmark )
+Max_of_X = 212.96 # Maxium of Xs in CMOS data + 2.88 ( Width of cells in CMOS benchmark )
 
 ########## Functions ###########
 def Draw(n,size,x,y,H_data,i):
@@ -128,7 +129,7 @@ for i in range(len(Name_array)):
         DFF_index[i+2] = Cell_Width
         DFF_index[i+3] = Cell_Width
 
-################ extract the X,Y of four boundry points ##########
+################ extract coordinates of four boundry points ##########
 for i in range(len(df['boundary'])):
     F_Boundary= Stirng_to_Float(df['boundary'][i])
     C_name = df['base_name'][i]
@@ -140,7 +141,7 @@ for i in range(len(df['boundary'])):
         x[4*i+j]= F_Boundary[2*j]
         y[4*i+j]= F_Boundary[2*j+1]
 
-############### extarct two right points ###########################
+############### extarct coordinates of two right points ###########################
 for i in range(len(df['boundary'])):
     F_Boundary= Stirng_to_Float(df['boundary'][i])
     Cd_name = df['base_name'][i]
@@ -163,7 +164,7 @@ for i in range(len(point_index)):
 X = np.array(list(zip(f1, f2, point_index))) # points with index
 X_WI = np.array(list(zip(f1, f2))) # points without index
 
-###### sort points by the Y cordinate ################
+###### sort points by the Y coordinate ################
 y1_sort = np.unique(np.sort(f2))
 ind1 = np.lexsort((X[:,0],X[:,1]))
 temp= X[ind1]
@@ -181,7 +182,7 @@ for i in range(len(temp)-1):
 temp[len(temp)-1][1] = j*Cell_height
 max_fig = j*Cell_height + Cell_height
 
-####################### Intial Space Ratio for distrubution of the cells ########################
+####################### Intial Space Ratio for distrubution of  cells ########################
 j = 0
 space = np.zeros((len(temp)), dtype=float)
 space_ratio = np.zeros((len(temp)), dtype=float)
@@ -210,11 +211,11 @@ temp[len(temp)-1][0] = temp[i+1][0]
 space[i+1] = Max_of_X - Min_Space - temp[i+1][0]
 total_sum = np.sum(space[i+1-j:i+1+1])
 for k in range(i+1-flag2,i+1+1):
-        space_ratio[k]= space[k] / total_sum     ####### space ratio in cmos style cells ######
+        space_ratio[k]= space[k] / total_sum     ####### space ratio in cmos floorplan ######
 
 
-#################### fake temp for compute the maxium value after adjustment ######################
-#################### This part of the code is just written to compute the maxium value ###########
+#################### fake temp is to compute the maxium value after adjustment ######################
+#################### This part of the code will only compute the maxium value ###########
 old_temp = temp
 temp_fake = temp
 j = 0
@@ -258,7 +259,7 @@ for i in range(len(temp)-1):
 
 temp[len(temp)-1][0] = temp[i][0] + Cell_Width # check this
 
-################# compute the new space ratio to apply ###########################
+################# compute the new space ratio for SFQ cells ###########################
 j = 0
 space_new = np.zeros((len(temp)), dtype=float)
 space_ratio_new = np.zeros((len(temp)), dtype=float)
@@ -286,7 +287,7 @@ total_sum = np.sum(space_new[i+1 - flag:i+1 + 1])
 for k in range(i+1 - flag, i+1 + 1):
     space_ratio_new[k] = space_new[k] / total_sum   ####### space ratio in sfQ style cells ######
 
-############## compute the ratio of space ratio ##############################
+############## compute space ratio ##############################
 change_space_ratio = np.zeros((len(temp)), dtype=float)
 for i in range(len(temp)):
     if (space_ratio[i] != 0.0):
@@ -294,7 +295,7 @@ for i in range(len(temp)):
 
 
 
-################################ apply the ratio of space ratio between cmos and SFQ ###########################
+################################ apply the new space ratio to SFQ floorplan ###########################
 j = 0
 for i in range(len(old_temp)-1):
     if (old_temp[i][1] == old_temp[i + 1][1]):
@@ -320,7 +321,7 @@ sorted_temp = old_temp[temp[:, 2].argsort()]
 X_WI = sorted_temp[:,0:2]
 X = X_WI
 
-############################### reading the 2 right points for plotting ##############################
+############################### Read two right coordinates for placement of cells ##############################
 data_d = pd.DataFrame({'x': xd, 'y': yd})
 
 # Getting the values and plotting it
@@ -328,7 +329,7 @@ f1_d = data_d['x'].values
 f2_d = data_d['y'].values
 X_d = np.array(list(zip(f1_d, f2_d, clock_index_d)))
 
-###################### sort the y values #########################################
+###################### sort by y coordinate #########################################
 y_sort = np.unique(np.sort(f2_d))
 ind = np.lexsort((X_d[:,0],X_d[:,1]))
 temp= X_d[ind]
